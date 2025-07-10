@@ -536,7 +536,7 @@ public class FileProcessorSolution {
             }
             
             // Check if third part is a valid log level
-            LogLevel.LogLevel level = LogLevel.fromString(parts[2]);
+            Optional<LogLevel> level = LogLevel.fromString(parts[2]);
             return level.isPresent();
         }
         

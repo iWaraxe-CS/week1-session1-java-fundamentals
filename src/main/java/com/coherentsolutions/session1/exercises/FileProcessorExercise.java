@@ -137,6 +137,11 @@ public class FileProcessorExercise {
         // TODO: Add getters and toString method
         
         // TODO: Consider validation and error handling
+        
+        // Stub methods to make compilation work
+        public String getLevel() { throw new UnsupportedOperationException("Not implemented yet"); }
+        public String getDate() { throw new UnsupportedOperationException("Not implemented yet"); }
+        public String getMessage() { throw new UnsupportedOperationException("Not implemented yet"); }
     }
     
     /**
@@ -157,6 +162,14 @@ public class FileProcessorExercise {
         // TODO: Add getters and calculation methods
         
         // TODO: Add method to generate summary text
+        
+        // Stub methods to make compilation work
+        public int getTotalEntries() { throw new UnsupportedOperationException("Not implemented yet"); }
+        public long getErrorCount() { throw new UnsupportedOperationException("Not implemented yet"); }
+        public long getWarningCount() { throw new UnsupportedOperationException("Not implemented yet"); }
+        public long getInfoCount() { throw new UnsupportedOperationException("Not implemented yet"); }
+        public Map<String, List<LogEntry>> getEntriesByDate() { throw new UnsupportedOperationException("Not implemented yet"); }
+        public Map<String, Long> getMostCommonErrors() { throw new UnsupportedOperationException("Not implemented yet"); }
     }
     
     /**

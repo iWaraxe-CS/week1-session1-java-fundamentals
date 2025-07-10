@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -168,7 +169,7 @@ public class JsonExamples {
             System.out.println(json);
             
             // Test deserialization with different property names
-            String inputJson = \"{\\\"user_id\\\":2,\\\"full_name\\\":\\\"Jane Smith\\\",\\\"email_address\\\":\\\"jane@example.com\\\",\\\"created_date\\\":\\\"2023-12-01T10:30:00\\\"}\";
+            String inputJson = "{\"user_id\":2,\"full_name\":\"Jane Smith\",\"email_address\":\"jane@example.com\",\"created_date\":\"2023-12-01T10:30:00\"}";
             AnnotatedUser deserializedUser = objectMapper.readValue(inputJson, AnnotatedUser.class);
             System.out.println("\nDeserialized from different property names:");
             System.out.println("ID: " + deserializedUser.getId());
@@ -217,7 +218,7 @@ public class JsonExamples {
             CustomSerializedData data = new CustomSerializedData(
                 "SENSITIVE_DATA", 
                 123.456, 
-                Arrays.asList(\"item1\", \"item2\", \"item3\")
+                Arrays.asList("item1", "item2", "item3")
             );
             
             // Create ObjectMapper with custom module
@@ -292,7 +293,7 @@ public class JsonExamples {
         
         try {
             // Tree model processing
-            String jsonString = \"{\\\"name\\\":\\\"John\\\",\\\"age\\\":30,\\\"hobbies\\\":[\\\"reading\\\",\\\"coding\\\"],\\\"address\\\":{\\\"city\\\":\\\"New York\\\",\\\"zip\\\":\\\"10001\\\"}}\";
+            String jsonString = "{\"name\":\"John\",\"age\":30,\"hobbies\":[\"reading\",\"coding\"],\"address\":{\"city\":\"New York\",\"zip\":\"10001\"}}";
             
             JsonNode rootNode = objectMapper.readTree(jsonString);
             System.out.println("\nTree model processing:");
@@ -372,7 +373,7 @@ public class JsonExamples {
         
         // Malformed JSON
         try {
-            String malformedJson = \"{\\\"name\\\": \\\"John\\\", \\\"age\\\": }\"; // Missing value
+            String malformedJson = "{\"name\": \"John\", \"age\": }"; // Missing value
             objectMapper.readValue(malformedJson, Person.class);
         } catch (JsonProcessingException e) {
             System.out.println("Malformed JSON error: " + e.getMessage().substring(0, Math.min(e.getMessage().length(), 80)) + "...");
@@ -383,7 +384,7 @@ public class JsonExamples {
             ObjectMapper strictMapper = new ObjectMapper();
             strictMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
             
-            String jsonWithUnknownField = \"{\\\"id\\\":1,\\\"name\\\":\\\"John\\\",\\\"unknownField\\\":\\\"value\\\"}\";
+            String jsonWithUnknownField = "{\"id\":1,\"name\":\"John\",\"unknownField\":\"value\"}";
             strictMapper.readValue(jsonWithUnknownField, BasicPerson.class);
         } catch (JsonProcessingException e) {
             System.out.println("Unknown property error: " + e.getMessage().substring(0, Math.min(e.getMessage().length(), 80)) + "...");
@@ -391,7 +392,7 @@ public class JsonExamples {
         
         // Type mismatch
         try {
-            String typeErrorJson = \"{\\\"id\\\":\\\"not-a-number\\\",\\\"name\\\":\\\"John\\\"}\";
+            String typeErrorJson = "{\"id\":\"not-a-number\",\"name\":\"John\"}";
             objectMapper.readValue(typeErrorJson, BasicPerson.class);
         } catch (JsonProcessingException e) {
             System.out.println("Type mismatch error: " + e.getMessage().substring(0, Math.min(e.getMessage().length(), 80)) + "...");
@@ -738,13 +739,14 @@ public class JsonExamples {
         @JsonSubTypes.Type(value = Cat.class, name = "cat")
     })
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static abstract class Animal {
         private String name;
     }
     
     @Data
-    @AllArgsConstructor
+    @EqualsAndHashCode(callSuper=false)
     public static class Dog extends Animal {
         private String breed;
         
@@ -755,7 +757,7 @@ public class JsonExamples {
     }
     
     @Data
-    @AllArgsConstructor
+    @EqualsAndHashCode(callSuper=false)
     public static class Cat extends Animal {
         private boolean indoor;
         

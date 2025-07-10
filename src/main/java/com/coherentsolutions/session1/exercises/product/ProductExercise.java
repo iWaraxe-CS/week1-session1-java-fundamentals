@@ -62,6 +62,13 @@ public class ProductExercise {
     
     public static void main(String[] args) {
         // TODO: Test your Product class here
-        System.out.println(\"=== PRODUCT EXERCISE ===\");\n        \n        // Create a product instance\n        // Set some properties\n        // Test the isExpensive method\n        // Print the product using toString\n        \n        System.out.println(\"Exercise completed! Check ProductSolution.java for the answer.\");
+        System.out.println("=== PRODUCT EXERCISE ===");
+        
+        // Create a product instance
+        // Set some properties
+        // Test the isExpensive method
+        // Print the product using toString
+        
+        System.out.println("Exercise completed! Check ProductSolution.java for the answer.");
     }
 }

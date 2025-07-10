@@ -1,20 +1,19 @@
 package com.coherentsolutions.session1.antipatterns.valuetypes;
 
-import java.util.Objects;
+import java.math.BigDecimal;
 
 /**
  * ANTI-PATTERN: Value Types in Java
  * 
  * This class demonstrates the WRONG way to handle value types in Java.
  * C# developers are used to:
- * - struct keyword for value types
- * - Value semantics (copy by value)
- * - Stack allocation
- * - Custom value types with equality
+ * - Value types (struct) vs reference types (class)
+ * - Automatic value semantics
+ * - Built-in decimal type
+ * - Non-nullable value types by default
  * 
- * Java doesn't have structs or value types (until Project Valhalla).
- * Everything is a reference type except primitives.
- * Common mistakes when trying to implement value-like behavior.
+ * Java doesn't have user-defined value types (before Project Valhalla).
+ * Common mistakes C# developers make when transitioning.
  */
 public class ValueTypeAntiPattern {
     
@@ -25,28 +24,169 @@ public class ValueTypeAntiPattern {
     public static void demonstrateValueTypeProblems() {
         System.out.println("=== VALUE TYPE ANTI-PATTERNS ===");
         
-        // PROBLEM 1: Trying to use struct syntax
-        System.out.println("\n1. Trying to use struct syntax:");
-        demonstrateStructAttempts();
+        // PROBLEM 1: Assuming primitives behave like C# value types
+        System.out.println("\n1. Primitive wrapper confusion:");
+        demonstratePrimitiveWrapperProblems();
         
-        // PROBLEM 2: Reference semantics when expecting value semantics
-        System.out.println("\n2. Reference vs Value semantics:");
-        demonstrateReferenceProblem();
+        // PROBLEM 2: Using == for value comparison
+        System.out.println("\n2. Using == for wrapper comparison:");
+        demonstrateWrapperComparisonProblems();
         
-        // PROBLEM 3: Poor equality implementation
-        System.out.println("\n3. Poor equality implementation:");
-        demonstrateEqualityProblems();
+        // PROBLEM 3: BigDecimal misuse
+        System.out.println("\n3. BigDecimal misuse:");
+        demonstrateBigDecimalProblems();
         
-        // PROBLEM 4: Mutable \"value\" objects
-        System.out.println("\n4. Mutable value objects:");
-        demonstrateMutabilityProblems();
+        // PROBLEM 4: Nullable value type confusion
+        System.out.println("\n4. Nullable value type confusion:");
+        demonstrateNullableProblems();
         
-        // PROBLEM 5: Ignoring hashCode contract
-        System.out.println("\n5. Ignoring hashCode contract:");
-        demonstrateHashCodeProblems();
+        // PROBLEM 5: Immutability misunderstanding
+        System.out.println("\n5. Immutability misunderstanding:");
+        demonstrateImmutabilityProblems();
     }
     
-    public static void demonstrateStructAttempts() {
-        // ❌ WRONG: Trying to use C# struct syntax
+    public static void demonstratePrimitiveWrapperProblems() {
+        // ❌ WRONG: Treating Integer like C# int
         
-        // This doesn't work in Java:\n        // public struct Point {\n        //     public int X;\n        //     public int Y;\n        // }\n        \n        System.out.println(\"Java doesn't have 'struct' keyword!\");\n        System.out.println(\"C# struct → Java class (reference type)\");\n        System.out.println(\"C# struct → Java record (Java 14+)\");\n        \n        // ❌ WRONG: Expecting value semantics from classes\n        PointAntiPattern p1 = new PointAntiPattern(10, 20);\n        PointAntiPattern p2 = p1; // Reference copy, not value copy!\n        \n        p2.x = 30; // This modifies p1 too!\n        \n        System.out.println(\"p1: (\" + p1.x + \", \" + p1.y + \")\"); // (30, 20)\n        System.out.println(\"p2: (\" + p2.x + \", \" + p2.y + \")\"); // (30, 20)\n        System.out.println(\"Modifying p2 also modified p1 - reference semantics!\");\n    }\n    \n    public static void demonstrateReferenceProblem() {\n        // ❌ WRONG: Expecting value semantics\n        \n        PointAntiPattern original = new PointAntiPattern(5, 10);\n        PointAntiPattern copy = original; // Not a copy, same reference!\n        \n        System.out.println(\"original == copy: \" + (original == copy)); // true\n        System.out.println(\"This is reference equality, not value equality!\");\n        \n        // ❌ WRONG: Trying to \"copy\" by creating new object\n        PointAntiPattern actualCopy = new PointAntiPattern(original.x, original.y);\n        System.out.println(\"original == actualCopy: \" + (original == actualCopy)); // false\n        System.out.println(\"Different references even with same values!\");\n        \n        // ❌ WRONG: No proper equals implementation\n        System.out.println(\"original.equals(actualCopy): \" + original.equals(actualCopy)); // false\n        System.out.println(\"equals() doesn't work - using Object.equals()!\");\n    }\n    \n    public static void demonstrateEqualityProblems() {\n        PersonAntiPattern person1 = new PersonAntiPattern(\"John\", 25);\n        PersonAntiPattern person2 = new PersonAntiPattern(\"John\", 25);\n        PersonAntiPattern person3 = person1;\n        \n        // ❌ WRONG: equals() not overridden properly\n        System.out.println(\"person1.equals(person2): \" + person1.equals(person2)); // false\n        System.out.println(\"Same data but different objects!\");\n        \n        System.out.println(\"person1.equals(person3): \" + person1.equals(person3)); // true\n        System.out.println(\"Same reference works, but not what we want!\");\n        \n        // ❌ WRONG: Using == for value comparison\n        System.out.println(\"person1 == person2: \" + (person1 == person2)); // false\n        System.out.println(\"== compares references, not values!\");\n    }\n    \n    public static void demonstrateMutabilityProblems() {\n        // ❌ WRONG: Mutable \"value\" object\n        PointAntiPattern point = new PointAntiPattern(10, 20);\n        \n        System.out.println(\"Original point: (\" + point.x + \", \" + point.y + \")\");\n        \n        // ❌ WRONG: Value objects should be immutable\n        modifyPoint(point);\n        \n        System.out.println(\"After modification: (\" + point.x + \", \" + point.y + \")\");\n        System.out.println(\"Point was modified - not value semantics!\");\n        \n        // ❌ WRONG: Mutable objects in collections cause problems\n        java.util.Set<PointAntiPattern> pointSet = new java.util.HashSet<>();\n        pointSet.add(point);\n        \n        System.out.println(\"Set contains point: \" + pointSet.contains(point)); // true\n        \n        // Modify the point\n        point.x = 100;\n        \n        System.out.println(\"Set contains modified point: \" + pointSet.contains(point)); // false!\n        System.out.println(\"HashSet can't find the modified object!\");\n    }\n    \n    public static void demonstrateHashCodeProblems() {\n        PersonWithBadHashCode person1 = new PersonWithBadHashCode(\"Alice\", 30);\n        PersonWithBadHashCode person2 = new PersonWithBadHashCode(\"Alice\", 30);\n        \n        // ❌ WRONG: equals() returns true but hashCode() is different\n        System.out.println(\"person1.equals(person2): \" + person1.equals(person2)); // true\n        System.out.println(\"person1.hashCode(): \" + person1.hashCode());\n        System.out.println(\"person2.hashCode(): \" + person2.hashCode());\n        System.out.println(\"Same objects have different hash codes!\");\n        \n        // This breaks HashMap/HashSet\n        java.util.Map<PersonWithBadHashCode, String> map = new java.util.HashMap<>();\n        map.put(person1, \"Person 1\");\n        \n        System.out.println(\"Map get with person1: \" + map.get(person1)); // Works\n        System.out.println(\"Map get with person2: \" + map.get(person2)); // null!\n        System.out.println(\"HashMap can't find equal object due to bad hashCode!\");\n    }\n    \n    private static void modifyPoint(PointAntiPattern point) {\n        point.x += 10;\n        point.y += 10;\n    }\n    \n    // ❌ WRONG: Mutable \"value\" class\n    public static class PointAntiPattern {\n        public int x; // Mutable public fields\n        public int y;\n        \n        public PointAntiPattern(int x, int y) {\n            this.x = x;\n            this.y = y;\n        }\n        \n        // ❌ WRONG: No equals() override - uses Object.equals()\n        // ❌ WRONG: No hashCode() override - uses Object.hashCode()\n        // ❌ WRONG: No toString() override - uses Object.toString()\n    }\n    \n    // ❌ WRONG: Another mutable \"value\" class\n    public static class PersonAntiPattern {\n        public String name;\n        public int age;\n        \n        public PersonAntiPattern(String name, int age) {\n            this.name = name;\n            this.age = age;\n        }\n        \n        // ❌ WRONG: Not overriding equals(), hashCode(), toString()\n    }\n    \n    // ❌ WRONG: Broken equals/hashCode contract\n    public static class PersonWithBadHashCode {\n        private String name;\n        private int age;\n        \n        public PersonWithBadHashCode(String name, int age) {\n            this.name = name;\n            this.age = age;\n        }\n        \n        // ✅ Correct equals implementation\n        @Override\n        public boolean equals(Object obj) {\n            if (this == obj) return true;\n            if (obj == null || getClass() != obj.getClass()) return false;\n            PersonWithBadHashCode person = (PersonWithBadHashCode) obj;\n            return age == person.age && Objects.equals(name, person.name);\n        }\n        \n        // ❌ WRONG: Not overriding hashCode() - breaks contract!\n        // When equals() is overridden, hashCode() MUST be overridden too\n    }\n    \n    // ❌ WRONG: Trying to implement copy semantics manually\n    public static class ComplexAntiPattern {\n        private int value;\n        private String data;\n        \n        public ComplexAntiPattern(int value, String data) {\n            this.value = value;\n            this.data = data;\n        }\n        \n        // ❌ WRONG: Manual copy method (error-prone)\n        public ComplexAntiPattern copy() {\n            return new ComplexAntiPattern(this.value, this.data);\n        }\n        \n        // ❌ WRONG: Setters on \"value\" object\n        public void setValue(int value) {\n            this.value = value;\n        }\n        \n        public void setData(String data) {\n            this.data = data;\n        }\n        \n        public int getValue() {\n            return value;\n        }\n        \n        public String getData() {\n            return data;\n        }\n    }\n    \n    // ❌ WRONG: Primitive obsession\n    public static void demonstratePrimitiveObsession() {\n        // ❌ WRONG: Using primitives for domain concepts\n        int temperature = 25; // Celsius or Fahrenheit?\n        double money = 100.50; // What currency?\n        String userId = \"123\"; // Could be confused with other IDs\n        \n        // ❌ WRONG: No type safety\n        processTemperature(money); // Compiles but semantically wrong!\n        processMoney((int)temperature); // Also wrong but compiles!\n        \n        System.out.println(\"Primitive obsession leads to bugs!\");\n    }\n    \n    private static void processTemperature(double temp) {\n        System.out.println(\"Processing temperature: \" + temp);\n    }\n    \n    private static void processMoney(int amount) {\n        System.out.println(\"Processing money: \" + amount);\n    }\n}
+        System.out.println("C# int vs Java Integer confusion:");
+        
+        // This works fine with primitives
+        int primitive1 = 100;
+        int primitive2 = 100;
+        System.out.println("primitive1 == primitive2: " + (primitive1 == primitive2)); // true
+        
+        // ❌ WRONG: Assuming same behavior with Integer
+        Integer wrapper1 = 200;  // Auto-boxing
+        Integer wrapper2 = 200;  // Auto-boxing
+        System.out.println("wrapper1 == wrapper2: " + (wrapper1 == wrapper2)); // false! (above cache range)
+        
+        // ❌ WRONG: Not understanding Integer cache
+        Integer cached1 = 100;   // Cached (-128 to 127)
+        Integer cached2 = 100;   // Same cached instance
+        System.out.println("cached1 == cached2: " + (cached1 == cached2)); // true (misleading!)
+        
+        System.out.println("This behavior confuses C# developers who expect consistent value semantics");
+    }
+    
+    public static void demonstrateWrapperComparisonProblems() {
+        // ❌ WRONG: Using == for wrapper comparison
+        
+        Double price1 = 29.99;
+        Double price2 = new Double(29.99);
+        
+        System.out.println("price1 == price2: " + (price1 == price2)); // false!
+        System.out.println("This is wrong - should use .equals()");
+        
+        // ❌ WRONG: Null pointer exception with auto-unboxing
+        Integer nullInt = null;
+        try {
+            int result = nullInt + 5;  // NullPointerException!
+        } catch (NullPointerException e) {
+            System.out.println("NullPointerException when unboxing null Integer");
+        }
+        
+        // ❌ WRONG: Inconsistent behavior with collections
+        java.util.List<Integer> numbers = java.util.Arrays.asList(1, 2, 3);
+        System.out.println("Contains 1: " + numbers.contains(1)); // true
+        System.out.println("Contains new Integer(1): " + numbers.contains(new Integer(1))); // true (but uses equals)
+        
+        System.out.println("Collection behavior is different from direct comparison");
+    }
+    
+    public static void demonstrateBigDecimalProblems() {
+        // ❌ WRONG: Treating BigDecimal like C# decimal
+        
+        System.out.println("BigDecimal problems that confuse C# developers:");
+        
+        // ❌ WRONG: Using == for BigDecimal comparison
+        BigDecimal amount1 = new BigDecimal("10.00");
+        BigDecimal amount2 = new BigDecimal("10.0");
+        
+        System.out.println("amount1 == amount2: " + (amount1 == amount2)); // false
+        System.out.println("amount1.equals(amount2): " + amount1.equals(amount2)); // false! (different scale)
+        
+        // ❌ WRONG: Not understanding scale differences
+        System.out.println("10.00 vs 10.0 are not equal in BigDecimal!");
+        
+        // ❌ WRONG: Creating BigDecimal from double
+        BigDecimal wrongWay = new BigDecimal(0.1);  // Imprecise!
+        BigDecimal rightWay = new BigDecimal("0.1"); // Precise
+        
+        System.out.println("From double: " + wrongWay);
+        System.out.println("From string: " + rightWay);
+        System.out.println("Doubles have precision issues!");
+        
+        // ❌ WRONG: Not using proper comparison
+        BigDecimal price = new BigDecimal("100.00");
+        BigDecimal threshold = new BigDecimal("100");
+        
+        // This is wrong way to compare
+        if (price.equals(threshold)) {
+            System.out.println("Equal prices");
+        } else {
+            System.out.println("Different prices (because of scale!)");
+        }
+    }
+    
+    public static void demonstrateNullableProblems() {
+        // ❌ WRONG: Not handling null wrapper types properly
+        
+        System.out.println("Nullable wrapper problems:");
+        
+        // C# nullable: int? nullableInt = null;
+        // Java equivalent: Integer nullableInt = null;
+        
+        Integer nullableInt = null;
+        
+        // ❌ WRONG: Not checking for null before operations
+        try {
+            int doubled = nullableInt * 2;  // NullPointerException!
+        } catch (NullPointerException e) {
+            System.out.println("NPE when operating on null Integer");
+        }
+        
+        // ❌ WRONG: Using wrong null-safe patterns
+        Integer value = getValue(); // Might return null
+        
+        // Wrong way (C# style)
+        if (value != null) {
+            System.out.println("Value: " + value);
+        }
+        // This works but is not idiomatic Java
+        
+        System.out.println("Should use Optional<T> for null safety in modern Java");
+    }
+    
+    public static void demonstrateImmutabilityProblems() {
+        // ❌ WRONG: Not understanding immutability of wrapper types
+        
+        System.out.println("Immutability confusion:");
+        
+        Integer original = 100;
+        Integer modified = original;
+        
+        // ❌ WRONG: Trying to modify immutable wrapper
+        // This doesn't actually modify the original
+        modified = modified + 50;
+        
+        System.out.println("Original: " + original);   // Still 100
+        System.out.println("Modified: " + modified);   // 150
+        
+        System.out.println("Wrapper types are immutable - 'modification' creates new objects");
+        
+        // ❌ WRONG: Not understanding string immutability impact
+        String str = "Hello";
+        str.toUpperCase(); // Returns new string, doesn't modify original
+        System.out.println("String after toUpperCase(): " + str); // Still "Hello"
+        
+        System.out.println("Forgot to assign result of toUpperCase()!");
+    }
+    
+    // ❌ WRONG: Method that can return null without indication
+    public static Integer getValue() {
+        if (Math.random() > 0.5) {
+            return 42;
+        }
+        return null; // No indication this can be null!
+    }
+}

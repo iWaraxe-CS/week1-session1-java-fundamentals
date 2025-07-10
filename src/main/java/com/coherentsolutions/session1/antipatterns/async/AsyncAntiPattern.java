@@ -23,4 +23,259 @@ public class AsyncAntiPattern {
         demonstrateAsyncProblems();
     }
     
-    public static void demonstrateAsyncProblems() {\n        System.out.println(\"=== ASYNC PROGRAMMING ANTI-PATTERNS ===\");\n        \n        // PROBLEM 1: Trying to use async/await syntax\n        System.out.println(\"\\n1. Trying to use async/await syntax:\");\n        demonstrateAsyncAwaitAttempts();\n        \n        // PROBLEM 2: Blocking on async operations\n        System.out.println(\"\\n2. Blocking on async operations:\");\n        demonstrateBlocking();\n        \n        // PROBLEM 3: Not handling exceptions properly\n        System.out.println(\"\\n3. Not handling exceptions properly:\");\n        demonstrateExceptionHandling();\n        \n        // PROBLEM 4: Creating too many threads\n        System.out.println(\"\\n4. Creating too many threads:\");\n        demonstrateThreadCreation();\n        \n        // PROBLEM 5: Not composing async operations\n        System.out.println(\"\\n5. Not composing async operations:\");\n        demonstrateComposition();\n    }\n    \n    public static void demonstrateAsyncAwaitAttempts() {\n        // ❌ WRONG: Trying to use C# async/await syntax\n        \n        // This doesn't work in Java:\n        // public async Task<String> GetDataAsync() {\n        //     String data = await SomeAsyncOperation();\n        //     return data.ToUpper();\n        // }\n        \n        System.out.println(\"Java doesn't have async/await keywords!\");\n        System.out.println(\"C# async/await → Java CompletableFuture\");\n        \n        // ❌ WRONG: Trying to return Task<T>\n        // This doesn't exist in Java:\n        // Task<String> result = GetDataAsync();\n        \n        System.out.println(\"C# Task<T> → Java CompletableFuture<T>\");\n    }\n    \n    public static void demonstrateBlocking() {\n        // ❌ WRONG: Blocking on async operations (defeats the purpose)\n        \n        CompletableFuture<String> future = fetchDataAsync();\n        \n        try {\n            // ❌ WRONG: Using .get() blocks the current thread\n            String result = future.get(); // This blocks!\n            System.out.println(\"Result: \" + result);\n            System.out.println(\"This blocks the thread - defeats async purpose!\");\n        } catch (InterruptedException | ExecutionException e) {\n            System.out.println(\"Error: \" + e.getMessage());\n        }\n        \n        // ❌ WRONG: Using .join() also blocks\n        CompletableFuture<String> anotherFuture = fetchDataAsync();\n        String result2 = anotherFuture.join(); // Also blocks!\n        System.out.println(\"Join also blocks: \" + result2);\n    }\n    \n    public static void demonstrateExceptionHandling() {\n        // ❌ WRONG: Not handling exceptions in async operations\n        \n        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {\n            if (Math.random() > 0.5) {\n                throw new RuntimeException(\"Random failure!\");\n            }\n            return \"Success!\";\n        });\n        \n        try {\n            // ❌ WRONG: Exception handling happens at .get() level\n            String result = future.get();\n            System.out.println(\"Result: \" + result);\n        } catch (Exception e) {\n            System.out.println(\"Exception caught at wrong level: \" + e.getMessage());\n        }\n        \n        // ❌ WRONG: Not handling CompletionException properly\n        CompletableFuture<Void> voidFuture = CompletableFuture.runAsync(() -> {\n            throw new RuntimeException(\"Async error\");\n        });\n        \n        try {\n            voidFuture.get();\n        } catch (ExecutionException e) {\n            // The actual exception is wrapped\n            System.out.println(\"Wrapped exception: \" + e.getCause().getMessage());\n        } catch (InterruptedException e) {\n            System.out.println(\"Interrupted: \" + e.getMessage());\n        }\n    }\n    \n    public static void demonstrateThreadCreation() {\n        // ❌ WRONG: Creating new threads for every async operation\n        \n        for (int i = 0; i < 10; i++) {\n            final int taskId = i;\n            \n            // ❌ WRONG: Creating new thread each time\n            new Thread(() -> {\n                System.out.println(\"Task \" + taskId + \" running on: \" + \n                    Thread.currentThread().getName());\n                \n                // Simulate work\n                try {\n                    Thread.sleep(100);\n                } catch (InterruptedException e) {\n                    Thread.currentThread().interrupt();\n                }\n            }).start();\n        }\n        \n        System.out.println(\"Created 10 new threads - inefficient!\");\n        \n        // Give threads time to complete\n        try {\n            Thread.sleep(200);\n        } catch (InterruptedException e) {\n            Thread.currentThread().interrupt();\n        }\n    }\n    \n    public static void demonstrateComposition() {\n        // ❌ WRONG: Not composing async operations properly\n        \n        // Sequential execution (not async composition)\n        try {\n            CompletableFuture<String> step1 = fetchDataAsync();\n            String result1 = step1.get(); // Blocks!\n            \n            CompletableFuture<String> step2 = processDataAsync(result1);\n            String result2 = step2.get(); // Blocks again!\n            \n            CompletableFuture<String> step3 = saveDataAsync(result2);\n            String finalResult = step3.get(); // Blocks once more!\n            \n            System.out.println(\"Final result: \" + finalResult);\n            System.out.println(\"This is sequential, not async composition!\");\n        } catch (Exception e) {\n            System.out.println(\"Error in sequential execution: \" + e.getMessage());\n        }\n    }\n    \n    // ❌ WRONG: Method that doesn't handle async properly\n    public static String getDataWrong(String input) {\n        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {\n            // Simulate async work\n            try {\n                Thread.sleep(1000);\n            } catch (InterruptedException e) {\n                Thread.currentThread().interrupt();\n                throw new RuntimeException(e);\n            }\n            return \"Processed: \" + input;\n        });\n        \n        // ❌ WRONG: Blocking in a method that should be async\n        return future.join();\n    }\n    \n    // ❌ WRONG: Method that doesn't provide timeout\n    public static String getDataWithoutTimeout(String input) {\n        CompletableFuture<String> future = longRunningOperation(input);\n        \n        try {\n            // ❌ WRONG: No timeout - could wait forever\n            return future.get();\n        } catch (Exception e) {\n            throw new RuntimeException(\"Operation failed\", e);\n        }\n    }\n    \n    // ❌ WRONG: Method that doesn't handle cancellation\n    public static void startLongRunningTaskWrong() {\n        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {\n            for (int i = 0; i < 1000000; i++) {\n                // ❌ WRONG: Not checking for cancellation\n                // Simulate long work\n                if (i % 100000 == 0) {\n                    System.out.println(\"Processing: \" + i);\n                }\n            }\n        });\n        \n        // No way to cancel this properly\n        System.out.println(\"Started uncancellable task\");\n    }\n    \n    // ❌ WRONG: Not using proper async patterns for I/O\n    public static String readFileWrong(String filename) {\n        // ❌ WRONG: Blocking I/O in async context\n        return CompletableFuture.supplyAsync(() -> {\n            try {\n                // This still blocks the thread pool thread!\n                Thread.sleep(2000); // Simulating file I/O\n                return \"File content: \" + filename;\n            } catch (InterruptedException e) {\n                Thread.currentThread().interrupt();\n                throw new RuntimeException(e);\n            }\n        }).join();\n    }\n    \n    // Helper methods\n    private static CompletableFuture<String> fetchDataAsync() {\n        return CompletableFuture.supplyAsync(() -> {\n            try {\n                Thread.sleep(500);\n            } catch (InterruptedException e) {\n                Thread.currentThread().interrupt();\n                throw new RuntimeException(e);\n            }\n            return \"Fetched data\";\n        });\n    }\n    \n    private static CompletableFuture<String> processDataAsync(String data) {\n        return CompletableFuture.supplyAsync(() -> {\n            try {\n                Thread.sleep(300);\n            } catch (InterruptedException e) {\n                Thread.currentThread().interrupt();\n                throw new RuntimeException(e);\n            }\n            return \"Processed: \" + data;\n        });\n    }\n    \n    private static CompletableFuture<String> saveDataAsync(String data) {\n        return CompletableFuture.supplyAsync(() -> {\n            try {\n                Thread.sleep(200);\n            } catch (InterruptedException e) {\n                Thread.currentThread().interrupt();\n                throw new RuntimeException(e);\n            }\n            return \"Saved: \" + data;\n        });\n    }\n    \n    private static CompletableFuture<String> longRunningOperation(String input) {\n        return CompletableFuture.supplyAsync(() -> {\n            try {\n                Thread.sleep(10000); // 10 seconds\n            } catch (InterruptedException e) {\n                Thread.currentThread().interrupt();\n                throw new RuntimeException(e);\n            }\n            return \"Long result: \" + input;\n        });\n    }\n}
+    public static void demonstrateAsyncProblems() {
+        System.out.println("=== ASYNC PROGRAMMING ANTI-PATTERNS ===");
+        
+        // PROBLEM 1: Trying to use async/await syntax
+        System.out.println("\n1. Trying to use async/await syntax:");
+        demonstrateAsyncAwaitAttempts();
+        
+        // PROBLEM 2: Blocking on async operations
+        System.out.println("\n2. Blocking on async operations:");
+        demonstrateBlocking();
+        
+        // PROBLEM 3: Not handling exceptions properly
+        System.out.println("\n3. Not handling exceptions properly:");
+        demonstrateExceptionHandling();
+        
+        // PROBLEM 4: Creating too many threads
+        System.out.println("\n4. Creating too many threads:");
+        demonstrateThreadCreation();
+        
+        // PROBLEM 5: Not composing async operations
+        System.out.println("\n5. Not composing async operations:");
+        demonstrateComposition();
+    }
+    
+    public static void demonstrateAsyncAwaitAttempts() {
+        // ❌ WRONG: Trying to use C# async/await syntax
+        
+        // This doesn't work in Java:
+        // public async Task<String> GetDataAsync() {
+        //     String data = await SomeAsyncOperation();
+        //     return data.ToUpper();
+        // }
+        
+        System.out.println("Java doesn't have async/await keywords!");
+        System.out.println("C# async/await → Java CompletableFuture");
+        
+        // ❌ WRONG: Trying to return Task<T>
+        // This doesn't exist in Java:
+        // Task<String> result = GetDataAsync();
+        
+        System.out.println("C# Task<T> → Java CompletableFuture<T>");
+    }
+    
+    public static void demonstrateBlocking() {
+        // ❌ WRONG: Blocking on async operations (defeats the purpose)
+        
+        CompletableFuture<String> future = fetchDataAsync();
+        
+        try {
+            // ❌ WRONG: Using .get() blocks the current thread
+            String result = future.get(); // This blocks!
+            System.out.println("Result: " + result);
+            System.out.println("This blocks the thread - defeats async purpose!");
+        } catch (InterruptedException | ExecutionException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        
+        // ❌ WRONG: Using .join() also blocks
+        CompletableFuture<String> anotherFuture = fetchDataAsync();
+        String result2 = anotherFuture.join(); // Also blocks!
+        System.out.println("Join also blocks: " + result2);
+    }
+    
+    public static void demonstrateExceptionHandling() {
+        // ❌ WRONG: Not handling exceptions in async operations
+        
+        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+            if (Math.random() > 0.5) {
+                throw new RuntimeException("Random failure!");
+            }
+            return "Success!";
+        });
+        
+        try {
+            // ❌ WRONG: Exception handling happens at .get() level
+            String result = future.get();
+            System.out.println("Result: " + result);
+        } catch (Exception e) {
+            System.out.println("Exception caught at wrong level: " + e.getMessage());
+        }
+        
+        // ❌ WRONG: Not handling CompletionException properly
+        CompletableFuture<Void> voidFuture = CompletableFuture.runAsync(() -> {
+            throw new RuntimeException("Async error");
+        });
+        
+        try {
+            voidFuture.get();
+        } catch (ExecutionException e) {
+            // The actual exception is wrapped
+            System.out.println("Wrapped exception: " + e.getCause().getMessage());
+        } catch (InterruptedException e) {
+            System.out.println("Interrupted: " + e.getMessage());
+        }
+    }
+    
+    public static void demonstrateThreadCreation() {
+        // ❌ WRONG: Creating new threads for every async operation
+        
+        for (int i = 0; i < 10; i++) {
+            final int taskId = i;
+            
+            // ❌ WRONG: Creating new thread each time
+            new Thread(() -> {
+                System.out.println("Task " + taskId + " running on: " + 
+                    Thread.currentThread().getName());
+                
+                // Simulate work
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }).start();
+        }
+        
+        System.out.println("Created 10 new threads - inefficient!");
+        
+        // Give threads time to complete
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    public static void demonstrateComposition() {
+        // ❌ WRONG: Not composing async operations properly
+        
+        // Sequential execution (not async composition)
+        try {
+            CompletableFuture<String> step1 = fetchDataAsync();
+            String result1 = step1.get(); // Blocks!
+            
+            CompletableFuture<String> step2 = processDataAsync(result1);
+            String result2 = step2.get(); // Blocks again!
+            
+            CompletableFuture<String> step3 = saveDataAsync(result2);
+            String finalResult = step3.get(); // Blocks once more!
+            
+            System.out.println("Final result: " + finalResult);
+            System.out.println("This is sequential, not async composition!");
+        } catch (Exception e) {
+            System.out.println("Error in sequential execution: " + e.getMessage());
+        }
+    }
+    
+    // ❌ WRONG: Method that doesn't handle async properly
+    public static String getDataWrong(String input) {
+        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+            // Simulate async work
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+            return "Processed: " + input;
+        });
+        
+        // ❌ WRONG: Blocking in a method that should be async
+        return future.join();
+    }
+    
+    // ❌ WRONG: Method that doesn't provide timeout
+    public static String getDataWithoutTimeout(String input) {
+        CompletableFuture<String> future = longRunningOperation(input);
+        
+        try {
+            // ❌ WRONG: No timeout - could wait forever
+            return future.get();
+        } catch (Exception e) {
+            throw new RuntimeException("Operation failed", e);
+        }
+    }
+    
+    // ❌ WRONG: Method that doesn't handle cancellation
+    public static void startLongRunningTaskWrong() {
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            for (int i = 0; i < 1000000; i++) {
+                // ❌ WRONG: Not checking for cancellation
+                // Simulate long work
+                if (i % 100000 == 0) {
+                    System.out.println("Processing: " + i);
+                }
+            }
+        });
+        
+        // No way to cancel this properly
+        System.out.println("Started uncancellable task");
+    }
+    
+    // ❌ WRONG: Not using proper async patterns for I/O
+    public static String readFileWrong(String filename) {
+        // ❌ WRONG: Blocking I/O in async context
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // This still blocks the thread pool thread!
+                Thread.sleep(2000); // Simulating file I/O
+                return "File content: " + filename;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }).join();
+    }
+    
+    // Helper methods
+    private static CompletableFuture<String> fetchDataAsync() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+            return "Fetched data";
+        });
+    }
+    
+    private static CompletableFuture<String> processDataAsync(String data) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+            return "Processed: " + data;
+        });
+    }
+    
+    private static CompletableFuture<String> saveDataAsync(String data) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+            return "Saved: " + data;
+        });
+    }
+    
+    private static CompletableFuture<String> longRunningOperation(String input) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(10000); // 10 seconds
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+            return "Long result: " + input;
+        });
+    }
+}
